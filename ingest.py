@@ -9,11 +9,13 @@ import urllib.error
 
 
 def read_addresses():
+    """Read personal data from csv"""
     df = pd.read_csv('addresses.csv', sep=';', na_filter=False)
     return df
 
 
 def refresh_VPN():
+    """Refresh the VPN"""
     print('Refreshing VPN!')
     path = r"C:\Program Files\CyberGhost 6\CyberGhost.exe"
 
@@ -23,17 +25,19 @@ def refresh_VPN():
     # print('Reconnecting...')
     # res = subprocess.run([path, "/connect"], check=False)
     # print('done.')
-    # return True
 
 
 def write_database(db):
+    """Write the Google result database to disk"""
     with open('database.pickle', 'wb') as f:
         pickle.dump(db, f)
     print("Wrote to disk.")
 
 
 def make_new_database():
-    # Make empty db from emails
+    """Make empty database from emails"""
+
+    # A database is a dictionary with email as the key, list of GoogleResult as value
     df = read_addresses()
     db = dict.fromkeys(df['EmailAddress'].values)
     print("Made new database.")
@@ -41,6 +45,7 @@ def make_new_database():
 
 
 def load_database(path='database.pickle'):
+    """Load the saved database of queried results"""
     with open(path, 'rb') as f:
         db = pickle.load(f)
     print("Loaded database: {0} entries".format(len(db)))
@@ -48,37 +53,42 @@ def load_database(path='database.pickle'):
 
 
 def populate_database(db, write=True):
+    """Fill the database with Google queries"""
     emails = list(db.keys())
 
     for i, email in enumerate(emails):
 
+        # Skip invalid fields
         if not isinstance(email, str):
             continue
 
+        # Skip already filled results
         if db[email] is not None:
             # print('Email {0} already known.'.format(email))
             continue
 
         try:
             print('Querying email {0} ({1}/{2})'.format(email, i, len(emails)))
-            result = do_query(email)
+            result = do_google_query(email)
 
             print("Got {0} results.".format(len(result)))
             db[email] = result
 
-            # Update directly
+            # Update after each update
             if write:
                 write_database(db)
 
         except urllib.error.HTTPError as e:
             print('Caught HTTP error: {0}'.format(e))
 
+            # Too many requests: must change IP
             if e.code == 503:
                 refresh_VPN()
                 sys.exit(-1)
 
 
 def database_stats(db):
+    """Compute basic stats on saved database"""
     emails = list(db.keys())
 
     non_null = 0
@@ -91,6 +101,7 @@ def database_stats(db):
 
 
 if __name__ == '__main__':
+
     # db = make_new_database()
     # write_database(db)
 
