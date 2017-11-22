@@ -59,6 +59,8 @@ def make_new_database():
     # A database is a dictionary with email as the key, list of GoogleResult as value
     df = read_addresses()
     db = dict.fromkeys(df['EmailAddress'].values)
+
+    write_database(db)
     print("Made new database.")
     return db
 
@@ -173,18 +175,19 @@ if __name__ == '__main__':
     # Read emails from .csv, create empty database and store to disk
     # db = make_new_database()
 
-    # Testing: try first 10 emails
+    # Testing: try first 10 emails and overwrite the database
     # db = {e: db[e] for e in list(db.keys())[1:10]}
-
     # write_database(db)
 
     # Load the database from disk
     db = load_database()
     database_stats(db)
 
-    emails = list(db.keys())
+    # emails = list(db.keys())
 
     # Start Google queries on emails in database
 
     # populate_database(db, query='email', write=True)
     populate_database(db, query='name+surname+email', write=True)
+
+    print('Script finished. Now you can start parsing Google results.')

@@ -279,11 +279,11 @@ if __name__ == '__main__':
         for e in emailsValid:
             results = db[e]
 
-            # Parse the first page
-            summary = parseAdvanced(e, results)
+            # Parse the first page using the heuristic parser
+            # summary = parseAdvanced(e, results)
 
-            # Return the first result
-            # summary = parseFirstResult(e, results)
+            # Return only the first result
+            summary = parseFirstResult(e, results)
 
             summaries.append(summary)
 
