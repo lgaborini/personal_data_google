@@ -3,7 +3,7 @@ Read the set of Google results stored in the database.
 
 Try to classify each Google result as LinkedIn/ResearchGate/personal page.
 
-Export results.csv containing parsed and classified data.
+Export results.csv containing parsed and certified data.
 """
 
 from ingest import load_database, read_addresses
@@ -12,18 +12,36 @@ import re
 import tldextract
 
 
-class MainResult:
-    """The main GoogleResult associated to somebody
+class PersonInformationResult:
+    """Class which extracts and represents personal information from a list of GoogleResults.
 
+    This class is derived in order to implement extraction from ResearchGate / LinkedIn / personal page results.
+
+    A GoogleResult is certified if we can extract information from it.
     If self.certified is False, the result is not verified and should NOT be exported.
+
+    There is only one certified result per person (the first one).
+    
+    self.candidates contains other candidate GoogleResults which satisfy criteria.
     """
 
-    def __init__(self, siteName):
+    def __init__(self, email, siteName, results=None):
+        # Email associated to the Google search
+        self.email = email
+        # Target website to locate information
+        self.siteName = siteName
+
+        # True if a matching GoogleResult has been found
         self.certified = False
-        self.candidates = []
+        # Best matching GoogleResult
         self.certifiedResult = None
         self.certifiedLink = None
-        self.siteName = siteName
+        # Other matching GoogleResults
+        self.candidates = []
+
+        if results is not None:
+            self.populateFromGoogleResults(results)
+
 
     def print(self):
         print('  {0}? {1} ({2} candidates): {3} ->> {4}'.format(
@@ -37,23 +55,110 @@ class MainResult:
         except AttributeError:
             pass
 
-"""Derived classes for each GoogleResult.
-If self.certified is True, they actually contain data."""
-class LinkedInResult(MainResult):
-    def __init__(self):
-        super().__init__('LinkedIn')
+    def populateFromGoogleResults(self, results):
+        """Parse a list of GoogleResults and find the most relevant."""
+        self.candidates = []
+        self.certified = False
+        self.certifiedResult = None
+        self.certifiedLink = None
+
+        for r in results:
+            # Check if we can extract information from the GoogleResult 
+            valid = self.validate_result(r)
+            if valid:
+                # Multiple matches:
+                # certify only the first result, append the others to candidates
+                if not self.certified:
+                    self.certified = True
+                    self.certifiedResult = r
+                    self.certifiedLink = r.link
+                else:
+                    self.candidates.append(r)
 
 
-class ResearchGateResult(MainResult):
-    def __init__(self):
-        super().__init__('ResearchGate')
+    def validate_result(self, result):
+        """Return True if we can extract information from a GoogleResult.
+        Must be overwritten by derived classes."""
+        raise NotImplementedError()
+
+#---------------
+# Derived classes for each GoogleResult.
+#
+# They define how to extract information from a GoogleResult according to website types.    
 
 
-class PersonalPageResult(MainResult):
-    def __init__(self):
-        super().__init__('personal page')
+class LinkedInResult(PersonInformationResult):
+    """Get somebody's LinkedIn details"""
+
+    def __init__(self, email, results):
+        super().__init__(email=email, siteName='LinkedIn', results=results)
+
+    def validate_result(self, result):
+        if not ('linkedin.' in result.link):
+            return False
+
+        nameDict = get_name(self.email)
+        valid = is_nameInTitle(result, nameDict)
+        valid = valid and r'/pub/' not in result.link
+        valid = valid and nameDict['company'].lower() in result.description.lower()
+        return valid
 
 
+class ResearchGateResult(PersonInformationResult):
+    """Get somebody's ResearchGate details"""
+
+    def __init__(self, email, results):
+        super().__init__(email=email, siteName='ResearchGate', results=results)
+
+    def validate_result(self, result):
+        if 'researchgate.net' not in result.link:
+            return False
+
+        nameDict = get_name(self.email)
+        valid = is_nameInTitle(result, nameDict)
+        valid = valid and r'/profile/' in result.link and nameDict['last'] in result.link
+        return valid
+
+
+class PersonalPageResult(PersonInformationResult):
+    """Get somebody's personal page (experimental)"""
+
+    def __init__(self, email, results):
+        super().__init__(email=email, siteName='personal page', results=results)
+
+    def validate_result(self, result):
+        # Skip documents
+        linkExt = result.link[-4:]
+        if linkExt in ['.pdf', '.doc', '.csv', '.xls', '.doc']:
+            return False
+
+        # Forbidden domains
+        domains = ['facebook', 'twitter', 'holaconnect', 'crunchbase', 'namenfinden']
+        if any(d in result.link for d in domains):
+            return False
+
+        # Parse domains from email and link
+        emailDomain = self.email.split('@')[-1]
+        linkComponents = tldextract.extract(result.link)
+
+        # Personal page must contain his name/surname somewhere in the title
+        nameDict = get_name(self.email)
+
+        valid = (nameDict['first'].lower() in result.name.lower() or
+                 nameDict['last'].lower() in result.name.lower())
+
+        # Company must be contained in link description
+        valid = valid and nameDict['company'].lower() in result.description.lower()
+
+        # Must be a contact page
+        v1 = re.match('[ck]ontact', result.name.lower())
+        # Email should have the same domain as the link
+        v2 = (emailDomain == (linkComponents.domain + '.' + linkComponents.suffix))
+        # or last name contained in link
+        v3 = nameDict['last'].lower() in result.link
+
+        valid = valid and (v1 or v2 or v3)
+        return valid
 
 
 # -------------------
@@ -74,157 +179,40 @@ def get_name(email, single_string=False):
     if single_string:
         return first + ' ' + last
     else:
-        return {'first': first, 'last': last, 'country': country, 'company': company}
+        return {
+            'first': first,
+            'last': last,
+            'country': country,
+            'company': company
+        }
 
 # -------------------
 # GoogleResult-class functions
 #
 # These functions associate objects to each GoogleResult
 # is_* return TRUE if a given GoogleResult satisfies a given criterium
-#
-def is_LinkedinURL(result):
-    """A LinkedIn GoogleResult"""
-    return 'linkedin.' in result.link
 
 
 def is_nameInTitle(result, name):
-    """Somebody's name is mentioned in the result title"""
+    """Somebody's name is mentioned in the webpage title"""
     return [name['first'].lower() in result.name.lower() and
             name['last'].lower() in result.name.lower()]
 
 # -------------------
-# has-class functions
-#
-# These functions perform actions on a list of GoogleResults
-#
-# has_* functions return the appropriate object given the list of GoogleResults
-#
-def has_Linkedin(email, results):
-    """Get somebody's LinkedIn details"""
-    candidates = []
-    certified = False
-    certifiedResult = None
-    certifiedLink = None
-
-    for r in results:
-        if not is_LinkedinURL(r):
-            continue
-
-        nameDict = get_name(email)
-        valid = is_nameInTitle(r, nameDict)
-        valid = valid and r'/pub/' not in r.link
-        valid = valid and nameDict['company'].lower() in r.description.lower()
-
-        if valid:
-            certified = True
-            certifiedResult = r
-            certifiedLink = r.link
-            candidates.append(r)
-
-    result = LinkedInResult()
-    result.certified = certified
-    result.candidates = candidates
-    result.certifiedResult = certifiedResult
-    result.certifiedLink = certifiedLink
-    return result
-
-
-def has_ResearchGate(email, results):
-    """Get somebody's ResearchGate details"""
-    candidates = []
-    certified = False
-    certifiedResult = None
-    certifiedLink = None
-
-    for r in results:
-        if 'researchgate.net' not in r.link:
-            continue
-
-        nameDict = get_name(email)
-        valid = is_nameInTitle(r, nameDict)
-        valid = valid and r'/profile/' in r.link and nameDict['last'] in r.link
-
-        if valid:
-            certified = True
-            certifiedResult = r
-            certifiedLink = r.link
-            candidates.append(r)
-
-    result = ResearchGateResult()
-    result.certified = certified
-    result.candidates = candidates
-    result.certifiedResult = certifiedResult
-    result.certifiedLink = certifiedLink
-    return result
-
-
-def has_personal_page(email, results):
-    """Get somebody's personal page details"""
-    candidates = []
-    certified = False
-    certifiedResult = None
-    certifiedLink = None
-
-    for r in results:
-        # Skip documents
-        linkExt = r.link[-4:]
-        if linkExt in ['.pdf', '.doc', '.csv', '.xls', '.doc']:
-            continue
-
-        # Forbidden domains
-        if is_LinkedinURL(r):
-            continue
-        domains = ['facebook', 'twitter', 'holaconnect', 'crunchbase', 'namenfinden']
-        if any(d in r.link for d in domains):
-            continue
-
-        # Parse domains from email and link
-        emailDomain = email.split('@')[-1]
-        linkComponents = tldextract.extract(r.link)
-
-        # Personal page must contain his name/surname somewhere in the title
-        nameDict = get_name(email)
-
-        valid = (nameDict['first'].lower() in r.name.lower() or
-                 nameDict['last'].lower() in r.name.lower())
-
-        # Company must be contained in link description
-        valid = valid and nameDict['company'].lower() in r.description.lower()
-
-        # Must be a contact page
-        v1 = re.match('[ck]ontact', r.name.lower())
-        # Email should have the same domain as the link
-        v2 = (emailDomain == (linkComponents.domain + '.' + linkComponents.suffix))
-        # or last name contained in link
-        v3 = nameDict['last'].lower() in r.link
-
-        valid = valid and (v1 or v2 or v3)
-
-        if valid:
-            certified = True
-            certifiedResult = r
-            certifiedLink = r.link
-            candidates.append(r)
-
-    result = PersonalPageResult()
-    result.certified = certified
-    result.candidates = candidates
-    result.certifiedResult = certifiedResult
-    result.certifiedLink = certifiedLink
-    return result
-
 # Printing functions
+
 
 def print_Person(email, results, linkedin=False, personal=False, researchgate=False):
     """Print someone's details"""
 
     nn = get_name(email)
 
-    ll = has_Linkedin(email, results)
-    pp = has_personal_page(email, results)
-    rg = has_ResearchGate(email, results)
+    ll = LinkedInResult(email, results)
+    pp = PersonalPageResult(email, results)
+    rg = ResearchGateResult(email, results)
 
-    print("*** {0} {1} @ {2} - {3} ***".format(nn['first'], nn['last'], nn['company'], email))
+    print("*** {0} {1} @ {2} - {3} ***".format(
+        nn['first'], nn['last'], nn['company'], email))
 
     if linkedin and ll.certified:
         ll.print()
@@ -273,15 +261,15 @@ if __name__ == '__main__':
             # Start classifying obtained GoogleResults
 
             # Linkedin
-            ll = has_Linkedin(e, results)
+            ll = LinkedInResult(e, results)
             # lr = ll.certifiedResult
 
             # Personal pages
-            pp = has_personal_page(e, results)
+            pp = PersonalPageResult(e, results)
             # lp = pp.certifiedResult
 
             # ResearchGate
-            rg = has_ResearchGate(e, results)
+            rg = ResearchGateResult(e, results)
             # lr = rg.certifiedResult
 
             # Summarize results to output file
