@@ -13,10 +13,10 @@ The project also imports [Google-Search-API](https://github.com/abenassi/Google-
 # Project structure
 
 The project is structured in two parts:
-- `ingest.py` reads a structured csv (`addresses.csv`) containing information to build Google queries, and performs Google searches.
-- `parse.py` refines saved Google searches, extracts required information and saves to disk (`results.csv`).
+- [ingest.py](./ingest.py) reads a structured csv (`addresses.csv`) containing information to build Google queries, and performs Google searches.
+- [parse.py](./parse.py) refines saved Google searches, extracts required information and saves to disk (`results.csv`).
 
-## Structure of `ingest.py`:
+## Structure of [ingest.py](./ingest.py):
 
 The script reads an input `csv` file with the following format: 
 > Country;CompanyName;FirstName;LastName;Title;EmailAddress
@@ -29,7 +29,7 @@ The script reads an input `csv` file with the following format:
 An empty database is created and saved to disk as `database.pickle`.   
 A database is a `Dict`, with an email as the key, and a list of `GoogleResults` as values (empty at start).
 
-The datbase is then populated by performing Google searches.   
+The database is then populated by performing Google searches.   
 Currently, the code only parses the first Google result page.
 
 For every entry in the database, a Google query is performed, either by "email" or "firstname lastname email". 
@@ -37,7 +37,7 @@ Each result is a list of `GoogleResult` objects, which is associated to the valu
 
 The entire database is saved to disk overwriting the previous version.
 
-## Structure of `parse.py`:
+## Structure of [parse.py](./parse.py):
 
 This script re-reads the saved database, and extract information for every individual according to the obtained Google results.
 
@@ -61,9 +61,37 @@ It holds the most promising result, as well as other Google results which may co
 
 The main workhorse is the function `validate_result`.    
 `validate_result` returns `True` if the given page contains information.
-The method `populateFromGoogleResults` validates every result for an individual, and fills information for `PersonInformationResult`.
+The method `populateFromGoogleResults` validates every result for an individual, and fills information for `PersonInformationResult`.   
+Currently, only the result link is retained, no further parsing is performed on the page.
 
-However, the class is abstract.    
+However, the class `PersonInformationResult` is abstract.    
 The parsing according to the website type is implemented by derived classes, which overload the validation method.
-Inheritance takes care for the dispatch.
+Inheritance dispatches the call of `validate_result` to the correct class.
+
+## Usage
+
+The script is designed to be run by providing a suitable `addresses.csv`, and uncommenting code in scripts.
+
+First run:
+- the database must be created and saved by uncommenting the following line in [ingest.py](./ingest.py):
+> db = make_new_database()
+
+The script reads and performs Google searches on the specified data.
+Notice that Google throttles requests, and an exception is thrown when the maximum amount of requests is reached.
+
+The type of query can also be modified by passing the appropriate parameter to function `populate_database`.
+
+Once all requests have been performed, [parse.py](./parse.py) takes care of extracting information.
+The choice of parser method is performed in the `main` function.
+
+## Disclaimer
+
+This script has been written only for learning purposes. No other use is authorized.
+
+## TODO:
+
+[ ] Implement command-line options
+[ ] Insert script to activate/deactivate VPN when necessary
+[ ] Display data on a Flask app
+[ ] Fix dependency on Google-Search-API
 
