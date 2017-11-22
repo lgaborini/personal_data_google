@@ -90,8 +90,8 @@ This script has been written only for learning purposes. No other use is authori
 
 ## TODO:
 
-[ ] Implement command-line options
-[ ] Insert script to activate/deactivate VPN when necessary
-[ ] Display data on a Flask app
-[ ] Fix dependency on Google-Search-API
+- [ ] Implement command-line options
+- [ ] Insert script to activate/deactivate VPN when necessary
+- [ ] Display data on a Flask app
+- [ ] Fix dependency on Google-Search-API
 
