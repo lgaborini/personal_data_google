@@ -6,7 +6,7 @@ Try to classify each Google result as LinkedIn/ResearchGate/personal page.
 Export results.csv containing parsed and certified data.
 """
 
-from ingest import load_database, read_addresses
+from ingest import load_database, get_name
 import pandas
 import re
 import tldextract
@@ -65,9 +65,11 @@ class PersonInformationResult:
         for r in results:
             # Check if we can extract information from the GoogleResult 
             valid = self.validate_result(r)
+
             if valid:
                 # Multiple matches:
-                # certify only the first result, append the others to candidates
+                #   certify only the first result
+                #   append the others to candidates
                 if not self.certified:
                     self.certified = True
                     self.certifiedResult = r
@@ -75,13 +77,12 @@ class PersonInformationResult:
                 else:
                     self.candidates.append(r)
 
-
     def validate_result(self, result):
         """Return True if we can extract information from a GoogleResult.
         Must be overwritten by derived classes."""
         raise NotImplementedError()
 
-#---------------
+# -------------------
 # Derived classes for each GoogleResult.
 #
 # They define how to extract information from a GoogleResult according to website types.    
@@ -160,31 +161,6 @@ class PersonalPageResult(PersonInformationResult):
         valid = valid and (v1 or v2 or v3)
         return valid
 
-
-# -------------------
-# person-class functions
-#
-# These functions perform actions on each person
-
-def get_name(email, single_string=False):
-    """Get dictionary of personal details from email"""
-    df = read_addresses()
-    row = df[df['EmailAddress'].values == email]
-
-    first = sanitize_string(row['FirstName'].values[0])
-    last = sanitize_string(row['LastName'].values[0])
-    company = sanitize_string(row['CompanyName'].values[0])
-    country = sanitize_string(row['Country'].values[0])
-
-    if single_string:
-        return first + ' ' + last
-    else:
-        return {
-            'first': first,
-            'last': last,
-            'country': country,
-            'company': company
-        }
 
 # -------------------
 # GoogleResult-class functions

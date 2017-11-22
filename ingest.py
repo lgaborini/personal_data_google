@@ -19,8 +19,6 @@ import urllib
 import urllib.error
 
 
-
-
 def read_addresses():
     """Read personal data from addresses.csv"""
     df = pd.read_csv('addresses.csv', sep=';', na_filter=False)
@@ -65,11 +63,44 @@ def load_database(path='database.pickle'):
     return db
 
 
-def populate_database(db, write=True):
+def get_name(email, single_string=False, df=None):
+    """Get dictionary of personal details from e-mail"""
+    if (df is None):
+        df = read_addresses()
+
+    row = df[df['EmailAddress'].values == email]
+
+    def sanitize_string(s):
+        """Return the string, or a blank if invalid"""
+        try:
+            return s + ''
+        except TypeError:
+            return ''
+
+    first = sanitize_string(row['FirstName'].values[0])
+    last = sanitize_string(row['LastName'].values[0])
+    company = sanitize_string(row['CompanyName'].values[0])
+    country = sanitize_string(row['Country'].values[0])
+
+    if single_string:
+        return first + ' ' + last
+    else:
+        return {
+            'first': first,
+            'last': last,
+            'country': country,
+            'company': company
+        }
+
+
+def populate_database(db, query='email', write=True):
     """Fill the database with Google queries"""
     emails = list(db.keys())
+    df = read_addresses()
 
     for i, email in enumerate(emails):
+
+        details = get_name(email, df=df)
 
         # Skip invalid fields
         if not isinstance(email, str):
@@ -81,9 +112,14 @@ def populate_database(db, write=True):
             continue
 
         try:
-            # Query by email
-            print('Querying email {0} ({1}/{2})'.format(email, i, len(emails)))
-            result = do_google_query(email)
+            # Create the Google query
+            if query is 'email':
+                query_string = email
+            if query is 'name+surname+email':
+                query_string = '{0} {1} "{2}"'.format(details.first, details.last, email)
+
+            print('Querying email {0} ({1}/{2}): query"{3}"'.format(email, i, len(emails), query_string))
+            result = do_google_query(query_string)
 
             # result is a list of GoogleResult objects
 
@@ -105,7 +141,7 @@ def populate_database(db, write=True):
 
 
 def database_stats(db):
-    """Compute basic stats on saved database"""
+    """Compute basic stats on the database"""
     emails = list(db.keys())
 
     non_null = 0
@@ -130,4 +166,4 @@ if __name__ == '__main__':
     emails = list(db.keys())
 
     # Start Google queries on emails in database
-    populate_database(db, write=True)
+    # populate_database(db, write=True)
