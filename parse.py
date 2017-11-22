@@ -1,3 +1,11 @@
+"""
+Read the set of Google results stored in the database.
+
+Try to classify each Google result as LinkedIn/ResearchGate/personal page.
+
+Export results.csv containing parsed and classified data.
+"""
+
 from ingest import load_database, read_addresses
 import pandas
 import re
@@ -5,7 +13,10 @@ import tldextract
 
 
 class MainResult:
-    """The main GoogleResult associated to somebody"""
+    """The main GoogleResult associated to somebody
+
+    If self.certified is False, the result is not verified and should NOT be exported.
+    """
 
     def __init__(self, siteName):
         self.certified = False
@@ -26,7 +37,8 @@ class MainResult:
         except AttributeError:
             pass
 
-
+"""Derived classes for each GoogleResult.
+If self.certified is True, they actually contain data."""
 class LinkedInResult(MainResult):
     def __init__(self):
         super().__init__('LinkedIn')
@@ -42,16 +54,12 @@ class PersonalPageResult(MainResult):
         super().__init__('personal page')
 
 
-def sanitize_string(s):
-    """Return the string, or a blank if invalid"""
-    try:
-        return s + ''
-    except TypeError:
-        return ''
 
 
 # -------------------
 # person-class functions
+#
+# These functions perform actions on each person
 
 def get_name(email, single_string=False):
     """Get dictionary of personal details from email"""
@@ -68,8 +76,12 @@ def get_name(email, single_string=False):
     else:
         return {'first': first, 'last': last, 'country': country, 'company': company}
 
-
-# result-class functions
+# -------------------
+# GoogleResult-class functions
+#
+# These functions associate objects to each GoogleResult
+# is_* return TRUE if a given GoogleResult satisfies a given criterium
+#
 def is_LinkedinURL(result):
     """A LinkedIn GoogleResult"""
     return 'linkedin.' in result.link
@@ -80,8 +92,13 @@ def is_nameInTitle(result, name):
     return [name['first'].lower() in result.name.lower() and
             name['last'].lower() in result.name.lower()]
 
-
+# -------------------
 # has-class functions
+#
+# These functions perform actions on a list of GoogleResults
+#
+# has_* functions return the appropriate object given the list of GoogleResults
+#
 def has_Linkedin(email, results):
     """Get somebody's LinkedIn details"""
     candidates = []
@@ -196,6 +213,7 @@ def has_personal_page(email, results):
     result.certifiedLink = certifiedLink
     return result
 
+# Printing functions
 
 def print_Person(email, results, linkedin=False, personal=False, researchgate=False):
     """Print someone's details"""
@@ -224,7 +242,20 @@ def print_Results(results):
         # print('   {0}'.format(r.description))
 
 
+def sanitize_string(s):
+    """Return the string, or a blank if invalid"""
+    try:
+        return s + ''
+    except TypeError:
+        return ''
+
+
 if __name__ == '__main__':
+    """
+    Load the database with stored Google results.
+    Parse each result and instantiate corresponding objects.
+    Export at the end.
+    """
 
     db = load_database('database.pickle')
     emails = list(db.keys())
@@ -238,6 +269,8 @@ if __name__ == '__main__':
 
             print_Person(e, results, researchgate=True, personal=True)
             name = get_name(e)
+
+            # Start classifying obtained GoogleResults
 
             # Linkedin
             ll = has_Linkedin(e, results)

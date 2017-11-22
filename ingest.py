@@ -1,3 +1,14 @@
+"""
+Read the set of email addresses in addresses.csv.
+Create an empty database to be filled with Google results.
+
+Populate the database with populate_database(...).
+
+Data format:
+- a database is a Dict with email as the key, list of GoogleResult as value.
+
+"""
+
 import pandas as pd
 import pickle
 import sys
@@ -8,14 +19,16 @@ import urllib
 import urllib.error
 
 
+
+
 def read_addresses():
-    """Read personal data from csv"""
+    """Read personal data from addresses.csv"""
     df = pd.read_csv('addresses.csv', sep=';', na_filter=False)
     return df
 
 
 def refresh_VPN():
-    """Refresh the VPN"""
+    """Disconnect and reconnect the VPN"""
     print('Refreshing VPN!')
     path = r"C:\Program Files\CyberGhost 6\CyberGhost.exe"
 
@@ -35,7 +48,7 @@ def write_database(db):
 
 
 def make_new_database():
-    """Make empty database from emails"""
+    """Make empty database from emails in .csv form"""
 
     # A database is a dictionary with email as the key, list of GoogleResult as value
     df = read_addresses()
@@ -68,21 +81,25 @@ def populate_database(db, write=True):
             continue
 
         try:
+            # Query by email
             print('Querying email {0} ({1}/{2})'.format(email, i, len(emails)))
             result = do_google_query(email)
+
+            # result is a list of GoogleResult objects
 
             print("Got {0} results.".format(len(result)))
             db[email] = result
 
-            # Update after each update
+            # Update after each query
             if write:
                 write_database(db)
 
         except urllib.error.HTTPError as e:
             print('Caught HTTP error: {0}'.format(e))
 
-            # Too many requests: must change IP
             if e.code == 503:
+                # Too many requests: must change IP
+                # TODO: do it automatically
                 refresh_VPN()
                 sys.exit(-1)
 
@@ -102,12 +119,15 @@ def database_stats(db):
 
 if __name__ == '__main__':
 
+    # Read emails from .csv, create empty database and store to disk
     # db = make_new_database()
     # write_database(db)
 
+    # Load the database from disk
     db = load_database()
     database_stats(db)
 
     emails = list(db.keys())
 
-    populate_database(db, True)
+    # Start Google queries on emails in database
+    populate_database(db, write=True)
