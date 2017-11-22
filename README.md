@@ -23,8 +23,16 @@ The script reads an input `csv` file with the following format:
 > Germany;Company1;first_name_1;last_name_1;Dr.;foo1@bar.com
 > Italy;Company1;first_name_2;last_name_2;Dr.;foo2@bar.com
 > Switzerland;Company2;first_name_3;last_name_3;Mr.;foo3@bar.com
-> France;Company2;first_name_4;last_name_4;Dr.;foo4@bar.com
+> France;Company2;first_name_4;last_name_4;Dr.;foo4@bar.com    
 > ...
+
+Required fields are:
+- `Country`
+- `CompanyName`
+- `FirstName`
+- `LastName`
+- `Title`
+- `EmailAddress`
 
 An empty database is created and saved to disk as `database.pickle`.   
 A database is a `Dict`, with an email as the key, and a list of `GoogleResults` as values (empty at start).
