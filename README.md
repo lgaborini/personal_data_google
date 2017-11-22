@@ -79,7 +79,7 @@ the database must be created and saved by uncommenting the following line in [in
 > db = make_new_database()
 
 and running:
-> python ingest.py
+> python ingest.py   
 > python parse.py
 
 #### Subsequent runs:
