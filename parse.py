@@ -206,12 +206,60 @@ def print_Results(results):
         # print('   {0}'.format(r.description))
 
 
-def sanitize_string(s):
-    """Return the string, or a blank if invalid"""
-    try:
-        return s + ''
-    except TypeError:
-        return ''
+def parseAdvanced(email, results):
+    """Advanced parser. Look at all results in first page, locate info, return a Dict to export."""
+
+    print_Person(email, results, researchgate=True, personal=True)
+    name = get_name(email)
+
+    # Start classifying obtained GoogleResults
+
+    # Linkedin
+    ll = LinkedInResult(email, results)
+    # lr = ll.certifiedResult
+
+    # Personal pages
+    pp = PersonalPageResult(email, results)
+    # lp = pp.certifiedResult
+
+    # ResearchGate
+    rg = ResearchGateResult(email, results)
+    # lr = rg.certifiedResult
+
+    # Summarize results
+    summary = {}
+    summary['email'] = email
+    summary['firstName'] = name['first']
+    summary['lastName'] = name['last']
+    summary['company'] = name['company']
+
+    summary['linkedinCertified'] = ll.certified
+    summary['linkedinLink'] = ll.certifiedLink
+
+    summary['personalCertified'] = pp.certified
+    summary['personalLink'] = pp.certifiedLink
+
+    summary['researchgateCertified'] = rg.certified
+    summary['researchgateLink'] = rg.certifiedLink
+
+    return summary
+
+
+def parseFirstResult(email, results):
+    """Simple parser. Simply return a Dict with the first Google result."""
+
+    name = get_name(email)
+    print_Person(email, results)
+
+    summary = {}
+    summary['email'] = email
+    summary['firstName'] = name['first']
+    summary['lastName'] = name['last']
+    summary['company'] = name['company']
+
+    summary['firstGoogleResult'] = results[0].link
+    summary['firstGoogleResultTitle'] = results[0].name
+    return summary
 
 
 if __name__ == '__main__':
@@ -231,38 +279,12 @@ if __name__ == '__main__':
         for e in emailsValid:
             results = db[e]
 
-            print_Person(e, results, researchgate=True, personal=True)
-            name = get_name(e)
+            # Parse the first page
+            summary = parseAdvanced(e, results)
 
-            # Start classifying obtained GoogleResults
+            # Return the first result
+            # summary = parseFirstResult(e, results)
 
-            # Linkedin
-            ll = LinkedInResult(e, results)
-            # lr = ll.certifiedResult
-
-            # Personal pages
-            pp = PersonalPageResult(e, results)
-            # lp = pp.certifiedResult
-
-            # ResearchGate
-            rg = ResearchGateResult(e, results)
-            # lr = rg.certifiedResult
-
-            # Summarize results to output file
-            summary = {}
-            summary['email'] = e
-            summary['firstName'] = name['first']
-            summary['lastName'] = name['last']
-            summary['company'] = name['company']
-
-            summary['linkedinCertified'] = ll.certified
-            summary['linkedinLink'] = ll.certifiedLink
-
-            summary['personalCertified'] = pp.certified
-            summary['personalLink'] = pp.certifiedLink
-
-            summary['researchgateCertified'] = rg.certified
-            summary['researchgateLink'] = rg.certifiedLink
             summaries.append(summary)
 
         # Export dataframe

@@ -98,8 +98,10 @@ def populate_database(db, query='email', write=True):
     emails = list(db.keys())
     df = read_addresses()
 
-    for i, email in enumerate(emails):
+    print('Populating database: {0} records.'.format(len(db)))
 
+    for i, email in enumerate(emails):
+        print('Record {0} of {1}.'.format(i, len(emails)))
         details = get_name(email, df=df)
 
         # Skip invalid fields
@@ -113,12 +115,16 @@ def populate_database(db, query='email', write=True):
 
         try:
             # Create the Google query
-            if query is 'email':
-                query_string = email
-            if query is 'name+surname+email':
-                query_string = '{0} {1} "{2}"'.format(details.first, details.last, email)
+            dict_query = {
+                'email': email,
+                'name+surname+email': '{0} {1} "{2}"'.format(details['first'], details['last'], email)
+            }
+            try:
+                query_string = dict_query[query]
+            except KeyError as e:
+                print('query must be in {0}', list(dict_query.keys()))
 
-            print('Querying email {0} ({1}/{2}): query"{3}"'.format(email, i, len(emails), query_string))
+            print('Querying email {0} ({1}/{2}): query \'{3}\''.format(email, i, len(emails), query_string))
             result = do_google_query(query_string)
 
             # result is a list of GoogleResult objects
@@ -139,6 +145,7 @@ def populate_database(db, query='email', write=True):
                 refresh_VPN()
                 sys.exit(-1)
 
+    print('Finished populating database.')
 
 def database_stats(db):
     """Compute basic stats on the database"""
@@ -157,6 +164,10 @@ if __name__ == '__main__':
 
     # Read emails from .csv, create empty database and store to disk
     # db = make_new_database()
+
+    # Testing: try first 10 emails
+    # db = {e: db[e] for e in list(db.keys())[1:10]}
+
     # write_database(db)
 
     # Load the database from disk
@@ -166,4 +177,6 @@ if __name__ == '__main__':
     emails = list(db.keys())
 
     # Start Google queries on emails in database
-    # populate_database(db, write=True)
+
+    # populate_database(db, query='email', write=True)
+    populate_database(db, query='name+surname+email', write=True)
