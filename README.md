@@ -35,7 +35,9 @@ Currently, the code only parses the first Google result page.
 For every entry in the database, a Google query is performed, either by "email" or "firstname lastname email". 
 Each result is a list of `GoogleResult` objects, which is associated to the value of the Dictionary.   
 
-The entire database is saved to disk overwriting the previous version.
+The entire database is saved to disk overwriting the previous version.   
+Feel free to interrupt the script anytime, as the database is saved at each row.   
+People with GoogleResults will not be checked again.   
 
 ## Structure of [parse.py](./parse.py):
 
@@ -72,9 +74,17 @@ Inheritance dispatches the call of `validate_result` to the correct class.
 
 The script is designed to be run by providing a suitable `addresses.csv`, and uncommenting code in scripts.
 
-First run:
-- the database must be created and saved by uncommenting the following line in [ingest.py](./ingest.py):
+* First run:
+the database must be created and saved by uncommenting the following line in [ingest.py](./ingest.py):
 > db = make_new_database()
+
+and running:
+> python ingest.py
+> python parse.py
+
+* Subsequent runs:
+the database is update only if necessary; elements with stored `GoogleResults` will not be modified.
+> python parse.py
 
 The script reads and performs Google searches on the specified data.
 Notice that Google throttles requests, and an exception is thrown when the maximum amount of requests is reached.
@@ -83,6 +93,8 @@ The type of query can also be modified by passing the appropriate parameter to f
 
 Once all requests have been performed, [parse.py](./parse.py) takes care of extracting information.
 The choice of parser method is performed in the `main` function.
+
+
 
 ## Disclaimer
 
