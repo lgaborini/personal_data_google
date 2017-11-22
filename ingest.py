@@ -2,11 +2,19 @@
 Read the set of email addresses in addresses.csv.
 Create an empty database to be filled with Google results.
 
-Populate the database with populate_database(...).
+Populate the database with populate_database.
 
+Google results are further refined in parse.py.
+
+# 
 Data format:
 - a database is a Dict with email as the key, list of GoogleResult as value.
-
+- addresses.csv:
+Country;CompanyName;FirstName;LastName;Title;EmailAddress
+Germany;Company1;first_name_1;last_name_1;Dr.;foo1@bar.com
+Italy;Company1;first_name_2;last_name_2;Dr.;foo2@bar.com
+Switzerland;Company2;first_name_3;last_name_3;Mr.;foo3@bar.com
+France;Company2;first_name_4;last_name_4;Dr.;foo4@bar.com
 """
 
 import pandas as pd
