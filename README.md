@@ -31,7 +31,11 @@ Documentation for each command is provided with the flag `--help`:
 - `drop_database` clear the database
 - `stats` show some statistics on the stored database
 - `populate_database` perform Google queries and save to disk
+    + --query email Google query `"abc@def.com"`
+    + --query name+surname+email Google query `"Foo Bar abc@def.com"`
 - `parse_information` extract information from Google queries and save to `results.csv`
+    + --policy first export only the first Google result
+    + --policy advanced parse the first page of Google results 
 
 ### Example session:
 
