@@ -10,12 +10,69 @@ pandas, pickle, subprocess, re, tldextract
 
 The project also imports [Google-Search-API](https://github.com/abenassi/Google-Search-API) (currently by copying, since the code had to be modified).
 
+# Usage
+
+The script is designed to be run by providing a suitable `addresses.csv`.
+
+## Usage (CLI):
+
+The file [scraper.py](./scraper.py) provides a small command-line access to the scraper.
+
+Any command is specified as follows:
+
+> python scraper.py [command]
+
+Documentation for each command is provided with the flag `--help`:
+
+> python scraper.py [command] --help
+
+### Available commands:
+- `make_new_database` create empty database from file `addresses.csv`
+- `drop_database` clear the database
+- `stats` show some statistics on the stored database
+- `populate_database` perform Google queries and save to disk
+- `parse_information` extract information from Google queries and save to `results.csv`
+
+### Example session:
+
+> python scraper.py make_database
+> python scraper.py stats
+> python scraper.py populate_database --query name+surname+email
+> python scraper.py parse_information --policy advanced
+> 
+
+
+## Usage (manual):
+
+The older way.
+
+### First run:
+the database must be created and saved by uncommenting the following line in [ingest.py](./ingest.py):
+> db = make_new_database()
+
+and running:
+> python ingest.py   
+> python parse.py
+
+#### Subsequent runs:
+the database is update only if necessary; elements with stored `GoogleResults` will not be modified.
+> python parse.py
+
+### Options
+
+The type of Google query can also be modified by passing the appropriate parameter to function `populate_database`.
+
+Once all requests have been performed, [parse.py](./parse.py) takes care of extracting information.
+The choice of parser method is performed in the `main` function.
+
+
 # Project structure
 
 The project is structured in two parts:
 - [ingest.py](./ingest.py) reads a structured csv (`addresses.csv`) containing information to build Google queries, and performs Google searches.
 - [parse.py](./parse.py) refines saved Google searches, extracts required information and saves to disk (`results.csv`).
 - [scraper.py](./scraper.py) contains the CLI interface
+
 
 ## Structure of [ingest.py](./ingest.py):
 
@@ -78,58 +135,6 @@ Currently, only the result link is retained, no further parsing is performed on 
 However, the class `PersonInformationResult` is abstract.    
 The parsing according to the website type is implemented by derived classes, which overload the validation method.
 Inheritance dispatches the call of `validate_result` to the correct class.
-
-## Usage
-
-The script is designed to be run by providing a suitable `addresses.csv`, and uncommenting code in scripts.
-
-## Usage (CLI):
-
-The file [scraper.py](./scraper.py) provides a small command-line access to the scraper.
-
-Any command is specified as follows:
-
-> python scraper.py [command]
-
-Documentation for each command is provided with the flag `--help`:
-
-> python scraper.py [command] --help
-
-### Available commands:
-- `make_new_database` create empty database from file `addresses.csv`
-- `drop_database` clear the database
-- `stats` show some statistics on the stored database
-- `populate_database` perform Google queries and save to disk
-- `parse_information` extract information from Google queries and save to `results.csv`
-
-### Example session:
->
-> python scraper.py make_database
-> python scraper.py stats
-> python scraper.py populate_database --query name+surname+email
-> python scraper.py parse_information --policy advanced
-
-
-## Usage (manual):
-
-### First run:
-the database must be created and saved by uncommenting the following line in [ingest.py](./ingest.py):
-> db = make_new_database()
-
-and running:
-> python ingest.py   
-> python parse.py
-
-#### Subsequent runs:
-the database is update only if necessary; elements with stored `GoogleResults` will not be modified.
-> python parse.py
-
-### Options
-
-The type of Google query can also be modified by passing the appropriate parameter to function `populate_database`.
-
-Once all requests have been performed, [parse.py](./parse.py) takes care of extracting information.
-The choice of parser method is performed in the `main` function.
 
 ### Caution
 The script reads and performs Google searches on the specified data.
