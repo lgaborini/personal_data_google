@@ -27,9 +27,9 @@ import urllib
 import urllib.error
 
 
-def read_addresses():
+def read_addresses(addresses_path='addresses.csv'):
     """Read personal data from addresses.csv"""
-    df = pd.read_csv('addresses.csv', sep=';', na_filter=False)
+    df = pd.read_csv(addresses_path, sep=';', na_filter=False)
     return df
 
 
@@ -46,28 +46,29 @@ def refresh_VPN():
     # print('done.')
 
 
-def write_database(db):
+def write_database(db, db_path='database.pickle'):
     """Write the Google result database to disk"""
-    with open('database.pickle', 'wb') as f:
+    with open(db_path, 'wb') as f:
         pickle.dump(db, f)
     print("Wrote to disk.")
 
 
-def make_new_database():
-    """Make empty database from emails in .csv form"""
+def make_new_database(addresses_path='addresses.csv'):
+    """Make empty database from emails in .csv form
 
-    # A database is a dictionary with email as the key, list of GoogleResult as value
-    df = read_addresses()
+    A database is a dictionary with email as the key, list of GoogleResult as value
+    """
+
+    df = read_addresses(addresses_path)
     db = dict.fromkeys(df['EmailAddress'].values)
 
-    write_database(db)
     print("Made new database.")
     return db
 
 
-def load_database(path='database.pickle'):
+def load_database(db_path='database.pickle'):
     """Load the saved database of queried results"""
-    with open(path, 'rb') as f:
+    with open(db_path, 'rb') as f:
         db = pickle.load(f)
     print("Loaded database: {0} entries".format(len(db)))
     return db
@@ -103,7 +104,7 @@ def get_name(email, single_string=False, df=None):
         }
 
 
-def populate_database(db, query='email', write=True):
+def populate_database(db, query='email', write=True, db_path='database.pickle'):
     """Fill the database with Google queries"""
     emails = list(db.keys())
     df = read_addresses()
@@ -144,7 +145,7 @@ def populate_database(db, query='email', write=True):
 
             # Update after each query
             if write:
-                write_database(db)
+                write_database(db, db_path=db_path)
 
         except urllib.error.HTTPError as e:
             print('Caught HTTP error: {0}'.format(e))
@@ -156,6 +157,7 @@ def populate_database(db, query='email', write=True):
                 sys.exit(-1)
 
     print('Finished populating database.')
+
 
 def database_stats(db):
     """Compute basic stats on the database"""
@@ -173,7 +175,8 @@ def database_stats(db):
 if __name__ == '__main__':
 
     # Read emails from .csv, create empty database and store to disk
-    # db = make_new_database()
+    db = make_new_database()
+    write_database(db)
 
     # Testing: try first 10 emails and overwrite the database
     # db = {e: db[e] for e in list(db.keys())[1:10]}
