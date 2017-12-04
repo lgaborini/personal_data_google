@@ -262,14 +262,13 @@ def parseFirstResult(email, results):
     return summary
 
 
-if __name__ == '__main__':
-    """
+def parseResults(db, parse_mode):
+    """Extract info from filled database and export.
+
     Load the database with stored Google results.
     Parse each result and instantiate corresponding objects.
     Export at the end.
     """
-
-    db = load_database('database.pickle')
     emails = list(db.keys())
     emailsValid = [e for e in emails if db[e] is not None]
 
@@ -279,11 +278,22 @@ if __name__ == '__main__':
         for e in emailsValid:
             results = db[e]
 
+            dict_parser = {
+                'first': parseFirstResult,
+                'advanced': parseAdvanced
+            }
+            try:
+                parserFcn = dict_parser[parse_mode]
+            except KeyError as e:
+                print('parse_mode must be in {0}', list(dict_parser.keys()))
+
+            summary = parserFcn(e, results)
+
             # Parse the first page using the heuristic parser
             # summary = parseAdvanced(e, results)
 
             # Return only the first result
-            summary = parseFirstResult(e, results)
+            # summary = parseFirstResult(e, results)
 
             summaries.append(summary)
 
@@ -296,3 +306,10 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('')
         print('*** Aborting (interrupt) ***')
+
+
+if __name__ == '__main__':
+    db = load_database('database.pickle')
+
+    parseResults(db, 'first')
+    # parseResults(db, 'advanced')
