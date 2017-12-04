@@ -35,11 +35,12 @@ Documentation for each command is provided with the flag `--help`:
 
 ### Example session:
 
-> python scraper.py make_database
-> python scraper.py stats
-> python scraper.py populate_database --query name+surname+email
-> python scraper.py parse_information --policy advanced
+> python scraper.py make_database  
+> python scraper.py stats  
+> python scraper.py populate_database --query name+surname+email  
+> python scraper.py parse_information --policy advanced  
 > 
+
 
 
 ## Usage (manual):
