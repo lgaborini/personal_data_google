@@ -15,6 +15,7 @@ The project also imports [Google-Search-API](https://github.com/abenassi/Google-
 The project is structured in two parts:
 - [ingest.py](./ingest.py) reads a structured csv (`addresses.csv`) containing information to build Google queries, and performs Google searches.
 - [parse.py](./parse.py) refines saved Google searches, extracts required information and saves to disk (`results.csv`).
+- [scraper.py](./scraper.py) contains the CLI interface
 
 ## Structure of [ingest.py](./ingest.py):
 
@@ -82,6 +83,35 @@ Inheritance dispatches the call of `validate_result` to the correct class.
 
 The script is designed to be run by providing a suitable `addresses.csv`, and uncommenting code in scripts.
 
+## Usage (CLI):
+
+The file [scraper.py](./scraper.py) provides a small command-line access to the scraper.
+
+Any command is specified as follows:
+
+> python scraper.py [command]
+
+Documentation for each command is provided with the flag `--help`:
+
+> python scraper.py [command] --help
+
+### Available commands:
+- `make_new_database` create empty database from file `addresses.csv`
+- `drop_database` clear the database
+- `stats` show some statistics on the stored database
+- `populate_database` perform Google queries and save to disk
+- `parse_information` extract information from Google queries and save to `results.csv`
+
+### Example session:
+>
+> python scraper.py make_database
+> python scraper.py stats
+> python scraper.py populate_database --query name+surname+email
+> python scraper.py parse_information --policy advanced
+
+
+## Usage (manual):
+
 ### First run:
 the database must be created and saved by uncommenting the following line in [ingest.py](./ingest.py):
 > db = make_new_database()
@@ -111,7 +141,7 @@ This script has been written only for learning purposes. No other use is authori
 
 ## TODO:
 
-- [ ] Implement command-line options
+- [x] Implement command-line options
 - [ ] Insert script to activate/deactivate VPN when necessary
 - [ ] Display data on a Flask app
 - [ ] Fix dependency on Google-Search-API

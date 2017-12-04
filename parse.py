@@ -311,5 +311,8 @@ def parseResults(db, parse_mode):
 if __name__ == '__main__':
     db = load_database('database.pickle')
 
+   # Return only the first result
     parseResults(db, 'first')
+
+    # Parse the first page using the heuristic parser
     # parseResults(db, 'advanced')
