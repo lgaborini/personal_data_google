@@ -1,0 +1,7 @@
+click
+pandas
+pickle
+subprocess
+urllib
+re
+tldextract
